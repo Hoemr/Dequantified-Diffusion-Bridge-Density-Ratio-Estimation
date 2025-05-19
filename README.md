@@ -11,7 +11,7 @@ Note that the code structure is a direct extension of: [https://github.com/yang-
 **D3RE is a plug-and-play method for ODE-based density ratio estimation methods.**
 
 The core module is summarized as follows (`sde_lib.py`):
-```
+```python
 class InterpXt(SDE):
     def __init__(self, args=None, N=1000, beta_min=0.1, beta_max=20):
         super().__init__(N)
@@ -151,14 +151,14 @@ class InterpXt(SDE):
 ```
 
 > For Toy datasets:
-```
+```python
 class ToyInterpXt(InterpXt):
     def __init__(self, args=None, N=1000, beta_min=0.1, beta_max=20):
         super().__init__(args=args, N=N, beta_min=beta_min, beta_max=beta_max)
 ```
 
 > For Image datasets:
-```
+```python
 class ImageInterpXt(InterpXt):
     def __init__(self, args=None, N=1000, beta_min=0.1, beta_max=20):
         super().__init__(args=args, N=N, beta_min=beta_min, beta_max=beta_max)
@@ -183,7 +183,7 @@ class ImageInterpXt(InterpXt):
 ## For the MI estimation experiments using the joint score matching objective:
 > For 40-D, we set `config.data.dim=40, config.training.n_iters=20001, config.training.eval_freq=100`.
 - DRE-$\infty$ (baseline)
-```
+```python
 python3 main.py --toy \
 --config configs/gmm_mutual_info/joint/param.py --mode=train \
 --config.model.type=joint --config.training.joint=True \
@@ -194,7 +194,7 @@ python3 main.py --toy \
 ```
 
 - D3RE (ours)
-```
+```python
 python3 main.py --toy \
 --config configs/gmm_mutual_info/joint/param.py --mode=train \
 --config.model.bridge=True \
@@ -217,7 +217,7 @@ First, we use the `nsf` codebase to train the flow models. All pre-trained model
 
 > (a) For the Gaussian noise model:
 - DRE-$\infty$ (baseline)
-```
+```python
 python3 main.py --flow \
 --config configs/mnist/z_gaussian_time_interpolate.py \
 --mode=train --doc=z_unet_lin_emb_noise \
@@ -225,7 +225,7 @@ python3 main.py --flow \
 ```
 
 - D3RE (ours)
-```
+```python
 python3 main.py --flow \
 --config configs/mnist/z_gaussian_time_interpolate.py \
 --config.model.bridge=True \
@@ -236,7 +236,7 @@ python3 main.py --flow \
 
 > (b) For the copula:
 - DRE-$\infty$ (baseline)
-```
+```python
 python3 main.py --flow \
 --config configs/mnist/z_copula_time_interpolate.py \
 --mode=train --doc=z_unet_lin_emb_copula \
@@ -245,7 +245,7 @@ python3 main.py --flow \
 ```
 
 - D3RE (ours)
-```
+```python
 python3 main.py --flow \
 --config configs/mnist/z_copula_time_interpolate.py \
 --config.model.bridge=True \
@@ -256,7 +256,7 @@ python3 main.py --flow \
 
 > (c) For the RQ-NSF flow model:
 - DRE-$\infty$ (baseline)
-```
+```python
 python3 main.py --flow \
 --config configs/mnist/z_flow_time_interpolate.py \
 --mode=train --doc=z_unet_lin_emb_flow \
@@ -265,7 +265,7 @@ python3 main.py --flow \
 ```
 
 - D3RE (ours)
-```
+```python
 python3 main.py --flow \
 --config configs/mnist/z_flow_time_interpolate.py \
 --config.model.bridge=True \
@@ -277,6 +277,7 @@ python3 main.py --flow \
 ## For the tabular and Toy 2D datasets
 The codes for this section are based on [https://github.com/rtqichen/ffjord.git](https://github.com/rtqichen/ffjord.git).
 > Hyper-parameter settings
+
 |           | nhidden | hdim_factor |
 | --------- | ------- | ----------- |
 | HEPMASS   | 3       | 20          |
