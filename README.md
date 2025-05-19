@@ -275,6 +275,17 @@ python3 main.py --flow \
 ```
 
 ## For the tabular and Toy 2D datasets
+The codes for this section are based on [https://github.com/rtqichen/ffjord.git](https://github.com/rtqichen/ffjord.git).
+> Hyper-parameter settings
+|           | nhidden | hdim_factor |
+| --------- | ------- | ----------- |
+| HEPMASS   | 3       | 20          |
+| POWER     | 4       | 15          |
+| GAS       | 2       | 20          |
+| MINIBOONE | 4       | 20          |
+| BSDS300   | 5       | 15          |
+
+
 The codes for this section have not yet been prepared and will be released after our subsequent work is accepted. If you are interested, please feel free to contact us via email at [maweichen@mail.scut.edu.cn](maweichen@mail.scut.edu.cn). We will be happy to provide the codes and detailed implementation information.
 
 ## References
