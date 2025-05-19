@@ -7,6 +7,179 @@ This repo contains a reference implementation for D3RE as described in the paper
 
 Note that the code structure is a direct extension of: [https://github.com/yang-song/score_sde_pytorch](https://github.com/yang-song/score_sde_pytorch)  and [https://github.com/ermongroup/dre-infinity.git](https://github.com/ermongroup/dre-infinity.git). 
 
+## Introduction
+**D3RE is a plug-and-play method for ODE-based density ratio estimation methods.**
+
+The core module is summarized as follows (`sde_lib.py`):
+```
+class InterpXt(SDE):
+    def __init__(self, args=None, N=1000, beta_min=0.1, beta_max=20):
+        super().__init__(N)
+        self.beta_0 = beta_min
+        self.beta_1 = beta_max
+        self.N = N
+        
+        self.args = args
+        self.GRBC_epsilon = args.GRBC_epsilon
+        self.bridge = args.bridge
+        self.combination_type = args.combination_type  # e.g., "linear", "VPSDE", "cosine"
+        self.gamma_t = args.gamma_t
+        self.OT = args.OT
+
+        if self.OT:
+            self.ot_sampler = OTPlanSampler(method="exact")
+            if self.combination_type != "linear":
+                raise ValueError(f"OT is {self.OT} and combination_type is {self.combination_type}, not linear")
+        else:
+            self.ot_sampler = None
+
+    @property
+    def T(self):
+        return 1.0
+
+    def get_marginal_var_fn(self):
+        if self.bridge:
+            return lambda t : self.bridge_var(t)
+        else:
+            return lambda t : self.get_alpha_t_beta_t(t)[1] ** 2
+
+    def get_marginal_var_dt_fn(self):
+        if self.bridge:
+            return lambda t : self.bridge_dt_var(t)
+        else:
+            return lambda t : self.get_d_beta_dt(t)
+
+    def bridge_std(self, t, alpha_t=None, beta_t=None):
+        return torch.sqrt(self.bridge_var(t, alpha_t=alpha_t, beta_t=beta_t))
+
+    def bridge_dt_std(self, t, alpha_t=None, beta_t=None):
+        return 0.5 * self.bridge_dt_var(t, alpha_t=alpha_t, beta_t=beta_t) / self.bridge_var(t, alpha_t=alpha_t, beta_t=beta_t)
+
+    def bridge_var(self, t, alpha_t=None, beta_t=None):
+        if alpha_t is None:
+            alpha_t, beta_t = self.get_alpha_t_beta_t(t)
+        return self.gamma_t * t * (1 - t) + (alpha_t**2 + beta_t**2) * self.GRBC_epsilon
+
+    def bridge_dt_var(self, t, alpha_t=None, beta_t=None):
+        if alpha_t is None:
+            alpha_t, beta_t = self.get_alpha_t_beta_t(t)
+        return self.gamma_t * (1. - 2 * t) + 2 * (alpha_t + beta_t) * self.GRBC_epsilon
+
+    def prior_sampling(self, shape):
+        return torch.randn(*shape)
+
+    def prior_logp(self, z):
+        N = np.prod(z.shape[1:])
+        squared_sum = torch.sum(z ** 2, dim=tuple(range(1, z.dim())))
+        return -N / 2. * np.log(2 * np.pi) - squared_sum / 2.
+
+    # Methods that require dimension-specific implementations.
+    def sde(self, x, t):
+        raise NotImplementedError("sde method must be implemented in subclass")
+
+    def discretize(self, x, t):
+        raise NotImplementedError("discretize method must be implemented in subclass")
+
+    def get_alpha_t_beta_t(self, t):
+        if self.combination_type == "linear":
+            alpha_t = 1 - t
+            beta_t = t
+        elif self.combination_type == "VPSDE":
+            log_mean_coeff = -0.25 * t ** 2 * (self.beta_1 - self.beta_0) - 0.5 * t * self.beta_0
+            alpha_t = torch.exp(log_mean_coeff)
+            beta_t = torch.sqrt(1. - torch.exp(2. * log_mean_coeff))
+        elif self.combination_type == "follmer":
+            alpha_t = torch.sqrt(1 - t ** 2)
+            beta_t = t
+        elif self.combination_type == "cosine":
+            s = torch.tensor(0.008, dtype=t.dtype, device=t.device)
+            fn_t = torch.cos((t + s) / (1 + s) * math.pi / 2)
+            fn_0 = torch.cos(s / (1 + s) * math.pi / 2)
+            alpha_t_bar = fn_t / fn_0
+            alpha_t = torch.sqrt(alpha_t_bar)
+            beta_t = torch.sqrt(1 - alpha_t_bar)
+        else:
+            raise ValueError(f"Combination type {self.combination_type} not implemented in InterpXt.")
+        return alpha_t, beta_t
+      
+    def get_d_beta_dt(self, t):
+        if self.combination_type == "linear":
+            d_beta_dt = 1.
+        elif self.combination_type == "VPSDE":
+            alpha_t, beta_t = self.get_alpha_t_beta_t(t)
+            term1 = alpha_t ** 2 / beta_t
+            term2 = 0.5 * ( (self.beta_1 - self.beta_0) * t + self.beta_0 )
+            d_beta_dt = term1 * term2
+        elif self.combination_type == "follmer":
+            d_beta_dt = 1.
+        elif self.combination_type == "cosine":
+            s = torch.tensor(0.008, dtype=t.dtype, device=t.device)
+            theta_t = (t + s) / (1 + s) * math.pi / 2
+            sin_theta_t = torch.sin(theta_t)
+            cos_theta_t = torch.cos(theta_t)
+            theta_0 = s / (1 + s) * math.pi / 2
+            fn_0 = torch.cos(theta_0)
+            alpha_t_bar = cos_theta_t / fn_0
+            beta_t = torch.sqrt(1 - alpha_t_bar)
+            numerator = sin_theta_t * math.pi
+            denominator = 4 * (1 + s) * fn_0 * beta_t
+            d_beta_dt = numerator / denominator
+        else:
+            raise ValueError(f"Combination type {self.combination_type} not implemented in InterpXt.")
+        
+        return d_beta_dt
+
+    def marginal_sample(self, x0, xT, t):
+        if self.OT:
+            x0, xT = self.ot_sampler.sample_plan(x0, xT, replace=True)
+        alpha_t, beta_t = self.get_alpha_t_beta_t(t)
+        xt = alpha_t * x0 + beta_t * xT
+
+        if self.bridge:
+            bridge_std = self.bridge_std(t, alpha_t=alpha_t, beta_t=beta_t)
+            z = torch.randn_like(x0).to(x0)
+            xt = xt + bridge_std * z
+        else:
+            z = torch.randn_like(x0).to(x0)
+            xt = xt + torch.sqrt((alpha_t**2 + beta_t**2) * self.GRBC_epsilon) * z
+        return xt
+
+    def inner_product(self, x, y):
+        assert x.shape == y.shape, "Input tensor shapes must match."
+        dims_to_sum = tuple(range(1, len(x.shape)))
+        return torch.sum(x * y, dim=dims_to_sum).view(-1, 1)
+```
+
+> For Toy datasets:
+```
+class ToyInterpXt(InterpXt):
+    def __init__(self, args=None, N=1000, beta_min=0.1, beta_max=20):
+        super().__init__(args=args, N=N, beta_min=beta_min, beta_max=beta_max)
+```
+
+> For Image datasets:
+```
+class ImageInterpXt(InterpXt):
+    def __init__(self, args=None, N=1000, beta_min=0.1, beta_max=20):
+        super().__init__(args=args, N=N, beta_min=beta_min, beta_max=beta_max)
+    
+    def bridge_std(self, t):
+        return super().bridge_std(t).view(t.size(0), 1, 1, 1)
+    
+    def bridge_var(self, t):
+        return super().bridge_var(t).view(t.size(0), 1, 1, 1)
+      
+    def marginal_std_bridge(self, t):
+        std = torch.sqrt(t * (self.T - t) / self.T)
+        return std.view(t.size(0), 1, 1, 1)
+
+    def get_alpha_t_beta_t(self, t):
+        alpha_t, beta_t = super().get_alpha_t_beta_t(t)
+        alpha_t = alpha_t.view(t.size(0), 1, 1, 1)
+        beta_t = beta_t.view(t.size(0), 1, 1, 1)
+        return alpha_t, beta_t
+``` 
+
 ## For the MI estimation experiments using the joint score matching objective:
 > For 40-D, we set `config.data.dim=40, config.training.n_iters=20001, config.training.eval_freq=100`.
 - DRE-$\infty$ (baseline)
