@@ -274,6 +274,9 @@ python3 main.py --flow \
 --workdir=./results/mnist_z_unet_lin_emb_flow_bridge --config.device_id=0
 ```
 
+## For the tabular and Toy 2D datasets
+The codes for this section have not yet been prepared and will be released after our subsequent work is accepted. If you are interested, please feel free to contact us via email at [maweichen@mail.scut.edu.cn](maweichen@mail.scut.edu.cn). We will be happy to provide the codes and detailed implementation information.
+
 ## References
 If you find this work useful in your research, please consider citing the following paper:
 ```
