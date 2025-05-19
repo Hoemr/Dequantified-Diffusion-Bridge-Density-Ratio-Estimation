@@ -110,4 +110,10 @@ If you find this work useful in your research, please consider citing the follow
   journal={arXiv preprint arXiv:2505.05034},
   year={2025}
 }
+@article{choi2021density,
+  title={Density Ratio Estimation via Infinitesimal Classification},
+  author={Choi, Kristy and Meng, Chenlin and Song, Yang and Ermon, Stefano},
+  journal={arXiv preprint arXiv:2111.11010},
+  year={2021}
+}
 ```
