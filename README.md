@@ -1,8 +1,8 @@
 # Official PyTorch implementation for D3RE
 
 This repo contains a reference implementation for D3RE as described in the paper:
-> Dequantified Diffusion Schrödinger Bridge for Density Ratio Estimation </br>
-> International Conference on Machine Learning (ICML), 2025. </br>
+> Title: Dequantified Diffusion Schrödinger Bridge for Density Ratio Estimation </br>
+> Conference: International Conference on Machine Learning (ICML), 2025. </br>
 > Paper: [https://arxiv.org/abs/2111.11010](https://arxiv.org/abs/2505.05034) </br>
 
 Note that the code structure is a direct extension of: [https://github.com/yang-song/score_sde_pytorch](https://github.com/yang-song/score_sde_pytorch)  and [https://github.com/ermongroup/dre-infinity.git](https://github.com/ermongroup/dre-infinity.git). 
