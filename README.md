@@ -7,8 +7,6 @@ This repo contains a reference implementation for D3RE as described in the paper
 
 Note that the code structure is a direct extension of: [https://github.com/yang-song/score_sde_pytorch](https://github.com/yang-song/score_sde_pytorch)  and [https://github.com/ermongroup/dre-infinity.git](https://github.com/ermongroup/dre-infinity.git). 
 
-Implementation details can be found in [https://github.com/ermongroup/dre-infinity.git](https://github.com/ermongroup/dre-infinity.git). 
-
 ## For the MI estimation experiments using the joint score matching objective:
 > For 40-D, we set `config.data.dim=40, config.training.n_iters=20001, config.training.eval_freq=100`.
 - DRE-$\infty$ (baseline)
@@ -34,17 +32,17 @@ python3 main.py --toy \
 --config.training.reweight=True --config.device_id=0
 ```
 
-For 80-D, we set `config.data.dim=80`, `config.training.eval_freq=100`, `config.training.n_iters=50001`.
+> For 80-D, we set `config.data.dim=80`, `config.training.eval_freq=100`, `config.training.n_iters=50001`.
 
-For 160-D, we set `config.data.dim=160`, `config.training.eval_freq=1000`, and `config.training.n_iters=200001`.
+> For 160-D, we set `config.data.dim=160`, `config.training.eval_freq=1000`, and `config.training.n_iters=200001`.
 
-For 320-D, we set `config.data.dim=320`, `config.training.eval_freq=1000`, `config.training.batch_size=256`, and `config.training.n_iters=400001`.
+> For 320-D, we set `config.data.dim=320`, `config.training.eval_freq=1000`, `config.training.batch_size=256`, and `config.training.n_iters=400001`.
 
 ## For the MNIST experiments:
 
 First, we use the `nsf` codebase to train the flow models. All pre-trained model checkpoints (Gaussian, Copula, RQ-NSF) can be found in `flow_ckpts/`. There is no need to re-train the flow models from scratch and all the time score networks take into account the particular ways that the data has been preprocessed.
 
-(a) For the Gaussian noise model:
+> (a) For the Gaussian noise model:
 - DRE-$\infty$ (baseline)
 ```
 python3 main.py --flow \
@@ -63,7 +61,7 @@ python3 main.py --flow \
 ```
 
 
-(b) For the copula:
+> (b) For the copula:
 - DRE-$\infty$ (baseline)
 ```
 python3 main.py --flow \
@@ -83,7 +81,7 @@ python3 main.py --flow \
 --workdir=./results/mnist_z_unet_lin_emb_copula_bridge --config.device_id=0
 ```
 
-(c) For the RQ-NSF flow model:
+> (c) For the RQ-NSF flow model:
 - DRE-$\infty$ (baseline)
 ```
 python3 main.py --flow \
